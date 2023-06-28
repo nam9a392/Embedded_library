@@ -1,0 +1,75 @@
+
+/**************** debug macro function ******************/
+/* copy this line of codes to your header file */     
+#define __DBG0(y,__info,...)
+#define __DBG1(y,__info,...)           y(__info,##__VA_ARGS__)
+#define __DBG(x,y,__info,...)          __DBG##x(y,__info,##__VA_ARGS__)
+#define _DBG(x,y,__info,...)           __DBG(x,y,__info,##__VA_ARGS__)
+
+/********************** user defined *********************/
+
+#define ENABLE      1
+#define DISABLE     0
+
+/* debug flag 
+* Note: Flag only ACCEPT by 2 value  0|1 ~ DISABLE | ENABLE
+*       when flag is disable all debuging line of codes will be clean removing
+* GENERAL_LOG : this FLAG control all debug functions 
+* TASK1_LOG   : user custom FLAG using in debug function with condition
+* TASK2_LOG
+*/
+
+#define GENERAL_LOG  ENABLE
+
+#if(GENERAL_LOG == ENABLE)
+#define TASK1_LOG    ENABLE
+#define TASK2_LOG    ENABLE
+#else
+#define TASK1_LOG    DISABLE
+#define TASK2_LOG    DISABLE
+#endif
+
+/*
+* define new DEBUG funtion form:
+*
+* #define __FUNC_MACRO_NAME__(Param)   _DBG( FLAG, __FuncAssigned_Name, Param)
+*
+*/
+#define DEBUG_V1(__info,...)         _DBG(GENERAL_LOG,printmsg,__info,##__VA_ARGS__) // generic debug func its only depending on GENERAL_LOG
+#define DEBUG_V1_C(FLAG,__info,...)  _DBG(FLAG       ,printmsg,__info,##__VA_ARGS__) // condition debug func depending on USER_CUSTOM_FLAG
+
+#define DEBUG_V2(__info)             _DBG(GENERAL_LOG,printf,__info)
+#define DEBUG_V2_C(FLAG,__info)      _DBG(FLAG       ,printf,__info)
+
+/*********************** Usage Demo **************************/
+void printmsg(char *format,...)
+{
+	char str[80];
+	/*Extract the argument list using VA apis */
+	va_list args;
+	va_start(args, format);
+	vsprintf(str, format, args);
+	HAL_UART_Transmit(&huart2,(uint8_t*)str, strlen(str),HAL_MAX_DELAY);
+	va_end(args);
+}
+
+void main()
+{
+    DEBUG_V1("start :");
+}
+
+void task1()
+{
+    DEBUG_V1_C(TASK1_LOG,"start task 1");
+    while(1)
+    {
+    }
+}
+
+void task2()
+{
+    DEBUG_V1_C(TASK2_LOG,"start task 2");
+    while(1)
+    {
+    }
+}
