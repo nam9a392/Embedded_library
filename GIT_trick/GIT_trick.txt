@@ -1,0 +1,6 @@
+################ ignore a folder from git #####################
+1. create .gitignore file by cmd
+    echo.>.gitignore
+2. open .gitignore file add ignored folder path eg:
+    Documents/
+    Source_code/2.Peco10_os/Objects
