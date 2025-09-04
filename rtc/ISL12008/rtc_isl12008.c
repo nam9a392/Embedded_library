@@ -9,11 +9,11 @@
 #define RTC_I2C_MasterSendData(address,buf,len,timeout)       I2C_MasterSendData(&g_isl12008I2cHandle, buf, len, address, timeout)
 #define RTC_I2C_MasterReceiveData(address,buf,len,timeout)    I2C_MasterReceiveData(&g_isl12008I2cHandle, buf, len, address, timeout)
 #elif defined(__RX_MCU__)
-#define RTC_I2C_MasterSendData(address,buf,len,timeout)       my_RIIC0_i2c_Master_Send(address , buf, len)
-#define RTC_I2C_MasterReceiveData(address,buf,len,timeout)    my_RIIC0_i2c_Master_Receive(address, buf, len)
+#define RTC_I2C_MasterSendData(address,buf,len,timeout)       my_SCI2_i2c_Master_Send(address , buf, len)
+#define RTC_I2C_MasterReceiveData(address,buf,len,timeout)    my_SCI2_i2c_Master_Receive(address, buf, len)
 #endif
 
-
+static rtcIF_t *g_rtcIF;
 /********************************** Local function prototype **************************************/
 static void rtc_i2c_init(void);
 static void rtc_i2c_pin_config(void);
@@ -39,7 +39,7 @@ static void rtc_i2c_init(void)
 	I2C_PeripheralControl(RTC_I2C, ENABLE);
 #elif defined(__RX_MCU__)
     /* using I2C comunication from sci1 RX mcu */
-	R_Config_RIIC0_Start();
+	//R_Config_RIIC0_Start();
 #endif
 }
 
@@ -97,14 +97,17 @@ static void rtc_write(uint8_t value,uint8_t reg_addr)
 	uint8_t tx[2];
 	tx[0] = reg_addr;
 	tx[1] = value;
-	RTC_I2C_MasterSendData(RTC_I2C_ADDRESS, tx, 2,  0);
+//	RTC_I2C_MasterSendData(RTC_I2C_ADDRESS, tx, 2,  0);
+	g_rtcIF->i2c_write(RTC_I2C_ADDRESS, tx, 2,  0);
 }
 
 static uint8_t rtc_read(uint8_t reg_addr)
 {
 	uint8_t data;
-    RTC_I2C_MasterSendData(RTC_I2C_ADDRESS,  &reg_addr, 1, 0);
-    RTC_I2C_MasterReceiveData(RTC_I2C_ADDRESS, &data, 1, 0);
+//    RTC_I2C_MasterSendData(RTC_I2C_ADDRESS,  &reg_addr, 1, 0);
+//    RTC_I2C_MasterReceiveData(RTC_I2C_ADDRESS, &data, 1, 0);
+	g_rtcIF->i2c_write(RTC_I2C_ADDRESS,  &reg_addr, 1, 0);
+	g_rtcIF->i2c_read(RTC_I2C_ADDRESS, &data, 1, 0);
 
     return data;
 }
@@ -136,9 +139,10 @@ static uint8_t bcd_to_binary(uint8_t value)
 
 
 /********************************** Global API function ************************************************/
-uint8_t rtc_init(void)
+uint8_t rtc_init(rtcIF_t *meIF)
 {
     uint8_t reg_val = 0;
+    g_rtcIF = meIF;
     /* initial i2c peripheral of mcu that control rtc module */
     rtc_i2c_init();
 	
@@ -253,7 +257,7 @@ void rtc_set_current_time(RTC_time_t *rtc_time)
 	}
 #elif defined(__ISL12008__)
     /* keep CEB, CB its current century bit */
-    hrs = hrs | (rtc_read(RTC_ADDR_MIN) && (0x3 << 6));
+    hrs = hrs | (rtc_read(RTC_ADDR_HRS) & (0x3 << 6));
 #endif
     /*****************************************/
 	rtc_write(hrs,RTC_ADDR_HRS);

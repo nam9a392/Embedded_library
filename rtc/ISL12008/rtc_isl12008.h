@@ -97,6 +97,11 @@ typedef struct
 #endif
 }RTC_time_t;
 
+typedef struct
+{
+	void (*i2c_write)(uint16_t adr, uint8_t * const tx_buf, uint16_t tx_num, uint32_t timeout);
+	void (*i2c_read)(uint16_t adr, uint8_t * const rx_buf, uint16_t rx_num, uint32_t timeout);
+}rtcIF_t;
 
 
 //Function prototypes
@@ -107,7 +112,7 @@ typedef struct
 *            2: RTC_CRYSTAL_OSC_ERROR ~ RTC has no crystal osc connection
 *           
 */
-uint8_t rtc_init(void);
+uint8_t rtc_init(rtcIF_t *meIF);
 
 /* 
 *   @Brief: Check RTC module is running or not
