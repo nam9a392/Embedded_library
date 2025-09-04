@@ -108,12 +108,12 @@ static void Lcd4004_4bits_Mode_Init(Lcd4004 *me)
 	//ASSERT(me!=NULL);
 	Lcd4004IF *tmpIF = me->meIF;
     //1. Do the lcd initialization
-	tmpIF->delay_ms(40);
+	tmpIF->delay_us(40);
     /*RS = 0, for LCD command*/
 	tmpIF->instruction_mode();
 
     tmpIF->write_4bit(0x3U);
-    tmpIF->delay_ms(5);
+    tmpIF->delay_us(5);
     tmpIF->write_4bit(0x3U);
     tmpIF->delay_us(150);
 
