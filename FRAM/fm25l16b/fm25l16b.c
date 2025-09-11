@@ -114,6 +114,11 @@ bool FM25L16B_write(fm25l16b_t *me, uint16_t address, uint8_t *buffer, uint32_t 
 	bool retVal = true;
 	uint8_t i = 0;
 	fm25l16bIF_t *tmpIF = me.meIF;
+	
+	if(address > FM25L16B_ADDRESS_MAX){
+		return false;
+	}
+	address = address & 0x7FF;
 	cmd[i++] = OP_WRITE;
 	cmd[i++] = (uint8_t)(address >> 8);
 	cmd[i++] = (uint8_t)(address & 0xFF);
@@ -133,6 +138,11 @@ bool FM25L16B_read(fm25l16b_t *me, uint16_t address, uint8_t *buffer, uint32_t n
 	bool retVal = true;
 	uint8_t i = 0;
 	fm25l16bIF_t *tmpIF = me.meIF;
+
+	if(address > FM25L16B_ADDRESS_MAX){
+		return false;
+	}
+	address = address & 0x7FF;
 	cmd[i++] = OP_READ;
 	cmd[i++] = (uint8_t)(address >> 8);
 	cmd[i++] = (uint8_t)(address & 0xFF);
