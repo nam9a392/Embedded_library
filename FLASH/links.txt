@@ -1,0 +1,2 @@
+https://github.com/libdriver/w25qxx.git
+https://github.com/wegi1/W25Q16-STM32F407VE-BLACK-SPI-EXTERNAL-LOADER
