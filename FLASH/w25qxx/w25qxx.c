@@ -17,6 +17,38 @@
 ==================================================================================================*/
 #define numBLOCK 32  // number of total blocks for 16Mb flash, 32x16x16 pages and 32x16x16x256 Bytes
 
+/********************** command ****************************/
+#define W25Q_WRITE_ENABLE        0x06
+#define W25Q_WRITE_DISABLE       0x04
+
+#define W25Q_RELEASE_POWER_DOWN  0xAB
+#define W25Q_JEDEC_ID            0x9F
+
+#define W25Q_READ_DATA           0x03
+#define W25Q_FAST_READ           0x0B
+#define W25Q_PAGE_PROGRAM        0x02
+#define W25Q_SECTOR_ERASE        0x20
+#define W25Q_32KB_BLOCK_ERASE    0x52
+#define W25Q_64KB_BLOCK_ERASE    0xD8
+#define W25Q_CHIP_ERASE          0xC7
+
+#define W25Q_READ_SR1            0x05
+#define W25Q_WRITE_SR1           0x01
+#define W25Q_READ_SR2            0x35
+#define W25Q_WRITE_SR2           0x31
+#define W25Q_READ_SR3            0x15
+#define W25Q_WRITE_SR3           0x11
+
+#define W25Q_POWER_DOWN          0xB9
+
+#define W25Q_ENABLE_RST          0x66
+#define W25Q_RESET               0x99
+
+#define W25Q_SECTOR_ERASE_4B     0x21
+#define W25Q_READ_DATA_4B        0x13
+#define W25Q_FAST_READ_4B        0x0C
+#define W25Q_PAGE_PROGRAM_4B     0x12
+#define W25Q_64KB_BLOCK_ERASE_4B 0xDC
 /*==================================================================================================
 *                                              ENUMS
 ==================================================================================================*/
@@ -40,6 +72,76 @@
 /*==================================================================================================
 *                                         LOCAL FUNCTIONS
 ==================================================================================================*/
+
+static uint8_t w25qxx_read_SR1(w25qxx_handle_t *me)
+{
+    w25qxxIF_t *tmpIF = me->meIF;
+    uint8_t tData = W25Q_READ_SR1;
+	uint8_t rData;
+	tmpIF->csLOW();
+	tmpIF->spi_write(&tData, 1);
+	tmpIF->spi_read(&rData, 1);
+	tmpIF->csHIGH();
+	return rData;
+}
+
+static uint8_t w25qxx_read_SR2(w25qxx_handle_t *me)
+{
+    w25qxxIF_t *tmpIF = me->meIF;
+    uint8_t tData = W25Q_READ_SR2;
+	uint8_t rData;
+	tmpIF->csLOW();
+	tmpIF->spi_write(&tData, 1);
+	tmpIF->spi_read(&rData, 1);
+	tmpIF->csHIGH();
+	return rData;
+}
+
+static uint8_t w25qxx_read_SR3(w25qxx_handle_t *me)
+{
+    w25qxxIF_t *tmpIF = me->meIF;
+    uint8_t tData = W25Q_READ_SR3;
+	uint8_t rData;
+	tmpIF->csLOW();
+	tmpIF->spi_write(&tData, 1);
+	tmpIF->spi_read(&rData, 1);
+	tmpIF->csHIGH();
+	return rData;
+}
+
+static void w25qxx_write_SR1(w25qxx_handle_t *me, uint8_t reg)
+{
+    w25qxxIF_t *tmpIF = me->meIF;
+    uint8_t tData[2];
+    tData[0] = W25Q_WRITE_SR1;
+    tData[1] = reg;
+	tmpIF->csLOW();
+	tmpIF->spi_write(tData, 2);
+	tmpIF->csHIGH();
+}
+
+static void w25qxx_write_SR2(w25qxx_handle_t *me, uint8_t reg)
+{
+    w25qxxIF_t *tmpIF = me->meIF;
+    uint8_t tData[2];
+    tData[0] = W25Q_WRITE_SR2;
+    tData[1] = reg;
+	tmpIF->csLOW();
+	tmpIF->spi_write(tData, 2);
+	tmpIF->csHIGH();
+}
+
+static void w25qxx_write_SR3(w25qxx_handle_t *me, uint8_t reg)
+{
+    w25qxxIF_t *tmpIF = me->meIF;
+    uint8_t tData[2];
+    tData[0] = W25Q_WRITE_SR3;
+    tData[1] = reg;
+	tmpIF->csLOW();
+	tmpIF->spi_write(tData, 2);
+	tmpIF->csHIGH();
+}
+
 static void w25qxx_Waitforwrite(w25qxx_handle_t *me)
 {
     w25qxxIF_t *tmpIF = me->meIF;
@@ -61,17 +163,17 @@ static void write_enable (w25qxx_handle_t *me)
 	tmpIF->csLOW();
 	tmpIF->spi_write(&tData, 1);
 	tmpIF->csHIGH();
-	tmpIF->delay_ms(5);  // 5ms delay
+	tmpIF->delay_us(1);  // 5ms delay
 }
 
 static void write_disable(w25qxx_handle_t *me)
 {
     w25qxxIF_t *tmpIF = me->meIF;
-	uint8_t tData = W25Q_WRITE_ENABLE;  // disable write
+	uint8_t tData = W25Q_WRITE_DISABLE;  // disable write
 	tmpIF->csLOW();
 	tmpIF->spi_write(&tData, 1);
 	tmpIF->csHIGH();
-	tmpIF->delay_ms(5);  // 5ms delay
+	tmpIF->delay_us(1);  // 5ms delay
 }
 
 static uint32_t bytestowrite (uint32_t size, uint16_t offset)
@@ -123,6 +225,21 @@ void w25qxx_init(w25qxx_handle_t *me, w25qxxIF_t *meIF)
 {
     //ASSERT((me != NULL) && (meIF != NULL));
     me->meIF = meIF;
+    me->SR1.byte = w25qxx_read_SR1(me);
+    me->SR2.byte = w25qxx_read_SR2(me);
+    me->SR3.byte = w25qxx_read_SR3(me);
+}
+
+uint32_t w25qxx_ReadID(w25qxx_handle_t *me)
+{
+    w25qxxIF_t *tmpIF = me->meIF;
+    uint8_t tData = W25Q_JEDEC_ID;  // Read JEDEC ID
+	uint8_t rData[3];
+	tmpIF->csLOW();
+	tmpIF->spi_write(&tData, 1);
+	tmpIF->spi_read(rData, 3);
+	tmpIF->csHIGH();
+	return ((rData[0]<<16)|(rData[1]<<8)|rData[2]);
 }
 
 void w25qxx_Reset(w25qxx_handle_t *me)
@@ -144,10 +261,10 @@ void w25qxx_Chip_Erase(w25qxx_handle_t *me)
 
 	write_enable(me);
 
-	tmpIF->csLOW();
-	tmpIF->spi_write(&unlock_code, 1);
-	tmpIF->csHIGH();
-	w25qxx_Waitforwrite(me);
+//	tmpIF->csLOW();
+//	tmpIF->spi_write(&unlock_code, 1);
+//	tmpIF->csHIGH();
+//	w25qxx_Waitforwrite(me);
 
 	tmpIF->csLOW();
 	tmpIF->spi_write(&tData, 1);
@@ -157,17 +274,41 @@ void w25qxx_Chip_Erase(w25qxx_handle_t *me)
 
 	write_disable(me);
 }
-
-uint32_t w25qxx_ReadID(w25qxx_handle_t *me)
+void w25qxx_Erase_Sector(w25qxx_handle_t *me, uint16_t numsector)
 {
     w25qxxIF_t *tmpIF = me->meIF;
-    uint8_t tData = 0x9F;  // Read JEDEC ID
-	uint8_t rData[3];
-	tmpIF->csLOW();
-	tmpIF->spi_write(&tData, 1);
-	tmpIF->spi_read(rData, 3);
-	tmpIF->csHIGH();
-	return ((rData[0]<<16)|(rData[1]<<8)|rData[2]);
+    uint8_t tData[6];
+	uint32_t memAddr = numsector*16*256;   // Each sector contains 16 pages * 256 bytes
+
+	write_enable(me);
+
+	if (numBLOCK<512)   // Chip Size<256Mb
+	{
+		tData[0] = W25Q_SECTOR_ERASE;  // Erase sector
+		tData[1] = (memAddr>>16)&0xFF;  // MSB of the memory Address
+		tData[2] = (memAddr>>8)&0xFF;
+		tData[3] = (memAddr)&0xFF; // LSB of the memory Address
+
+		tmpIF->csLOW();
+		tmpIF->spi_write(tData, 4);
+		tmpIF->csHIGH();
+	}
+	else  // we use 32bit memory address for chips >= 256Mb
+	{
+		tData[0] = W25Q_SECTOR_ERASE_4B;  // ERASE Sector with 32bit address
+		tData[1] = (memAddr>>24)&0xFF;
+		tData[2] = (memAddr>>16)&0xFF;
+		tData[3] = (memAddr>>8)&0xFF;
+		tData[4] = memAddr&0xFF;
+
+		tmpIF->csLOW();  // pull the CS LOW
+		tmpIF->spi_write(tData, 5);
+		tmpIF->csHIGH();  // pull the HIGH
+	}
+
+	w25qxx_Waitforwrite(me);
+
+	write_disable(me);
 }
 
 void w25qxx_Read(w25qxx_handle_t *me, uint32_t startPage, uint8_t offset, uint32_t size, uint8_t *rData)
@@ -205,7 +346,6 @@ void w25qxx_Read(w25qxx_handle_t *me, uint32_t startPage, uint8_t offset, uint32
 	tmpIF->spi_read(rData, size);  // Read the data
 	tmpIF->csHIGH();  // pull the CS High
 }
-
 void w25qxx_FastRead(w25qxx_handle_t *me, uint32_t startPage, uint8_t offset, uint32_t size, uint8_t *rData)
 {
     w25qxxIF_t *tmpIF = me->meIF;
@@ -243,42 +383,60 @@ void w25qxx_FastRead(w25qxx_handle_t *me, uint32_t startPage, uint8_t offset, ui
 	tmpIF->spi_read(rData, size);  // Read the data
 	tmpIF->csHIGH();  // pull the CS High
 }
-
-void w25qxx_Erase_Sector(w25qxx_handle_t *me, uint16_t numsector)
+uint8_t w25qxx_Read_Byte (w25qxx_handle_t *me, uint32_t Addr)
 {
     w25qxxIF_t *tmpIF = me->meIF;
-    uint8_t tData[6];
-	uint32_t memAddr = numsector*16*256;   // Each sector contains 16 pages * 256 bytes
-
-	write_enable(me);
+    uint8_t tData[5];
+	uint8_t rData;
 
 	if (numBLOCK<512)   // Chip Size<256Mb
 	{
-		tData[0] = W25Q_SECTOR_ERASE;  // Erase sector
-		tData[1] = (memAddr>>16)&0xFF;  // MSB of the memory Address
-		tData[2] = (memAddr>>8)&0xFF;
-		tData[3] = (memAddr)&0xFF; // LSB of the memory Address
-
-		tmpIF->csLOW();
-		tmpIF->spi_write(tData, 4);
-		tmpIF->csHIGH();
+		tData[0] = W25Q_READ_DATA;  // enable Read
+		tData[1] = (Addr>>16)&0xFF;  // MSB of the memory Address
+		tData[2] = (Addr>>8)&0xFF;
+		tData[3] = (Addr)&0xFF; // LSB of the memory Address
 	}
 	else  // we use 32bit memory address for chips >= 256Mb
 	{
-		tData[0] = W25Q_SECTOR_ERASE_4B;  // ERASE Sector with 32bit address
-		tData[1] = (memAddr>>24)&0xFF;
-		tData[2] = (memAddr>>16)&0xFF;
-		tData[3] = (memAddr>>8)&0xFF;
-		tData[4] = memAddr&0xFF;
-
-		tmpIF->csLOW();  // pull the CS LOW
-		tmpIF->spi_write(tData, 5);
-		tmpIF->csHIGH();  // pull the HIGH
+		tData[0] = W25Q_READ_DATA_4B;  // Read Data with 4-Byte Address
+		tData[1] = (Addr>>24)&0xFF;  // MSB of the memory Address
+		tData[2] = (Addr>>16)&0xFF;
+		tData[3] = (Addr>>8)&0xFF;
+		tData[4] = (Addr)&0xFF; // LSB of the memory Address
 	}
 
-	w25qxx_Waitforwrite(me);
+	tmpIF->csLOW();  // pull the CS Low
+	if (numBLOCK<512)
+	{
+		tmpIF->spi_write(tData, 4);  // send read instruction along with the 24 bit memory address
+	}
+	else
+	{
+		tmpIF->spi_write(tData, 5);  // send read instruction along with the 32 bit memory address
+	}
 
-	write_disable(me);
+	tmpIF->spi_read(&rData, 1);  // Read the data
+	tmpIF->csHIGH();  // pull the CS High
+
+	return rData;
+}
+float w25qxx_Read_NUM (w25qxx_handle_t *me, uint32_t page, uint16_t offset)
+{
+	uint8_t rData[4];
+	w25qxx_Read(me, page, offset, 4, rData);
+	return (Bytes2float(rData));
+}
+void w25qxx_Read_32B (w25qxx_handle_t *me, uint32_t page, uint16_t offset, uint32_t size, uint32_t *data)
+{
+    uint8_t data8[size*4];
+	uint32_t indx = 0;
+
+	w25qxx_FastRead(me, page, offset, size*4, data8);
+
+	for (uint32_t i=0; i<size; i++)
+	{
+		data[i] = (data8[indx++]) | (data8[indx++]<<8) | (data8[indx++]<<16) | (data8[indx++]<<24);
+	}
 }
 
 void w25qxx_Write_Clean(w25qxx_handle_t *me, uint32_t page, uint16_t offset, uint32_t size, uint8_t *data)
@@ -363,7 +521,6 @@ void w25qxx_Write_Clean(w25qxx_handle_t *me, uint32_t page, uint16_t offset, uin
 
 	}
 }
-
 void w25qxx_Write (w25qxx_handle_t *me, uint32_t page, uint16_t offset, uint32_t size, uint8_t *data)
 {
     w25qxxIF_t *tmpIF = me->meIF;
@@ -371,22 +528,21 @@ void w25qxx_Write (w25qxx_handle_t *me, uint32_t page, uint16_t offset, uint32_t
 	uint16_t endSector  = (page + ((size+offset-1)/256))/16;
 	uint16_t numSectors = endSector-startSector+1;
 
-	uint8_t previousData[4096];
 	uint32_t sectorOffset = ((page%16)*256)+offset;
 	uint32_t dataindx = 0;
 
 	for (uint16_t i=0; i<numSectors; i++)
 	{
 		uint32_t startPage = startSector*16;
-		w25qxx_FastRead(me, startPage, 0, 4096, previousData);
+		w25qxx_FastRead(me, startPage, 0, 4096, me->tempData);
 
 		uint16_t bytesRemaining = bytestomodify(size, sectorOffset);
 		for (uint16_t i=0; i<bytesRemaining; i++)
 		{
-			previousData[i+sectorOffset] = data[i+dataindx];
+			me->tempData[i+sectorOffset] = data[i+dataindx];
 		}
 
-		w25qxx_Write_Clean(me, startPage, 0, 4096, previousData);
+		w25qxx_Write_Clean(me, startPage, 0, 4096, me->tempData);
 
 		startSector++;
 		sectorOffset = 0;
@@ -394,7 +550,6 @@ void w25qxx_Write (w25qxx_handle_t *me, uint32_t page, uint16_t offset, uint32_t
 		size = size-bytesRemaining;
 	}
 }
-
 void w25qxx_Write_Byte (w25qxx_handle_t *me, uint32_t Addr, uint8_t data)
 {
     w25qxxIF_t *tmpIF = me->meIF;
@@ -433,72 +588,11 @@ void w25qxx_Write_Byte (w25qxx_handle_t *me, uint32_t Addr, uint8_t data)
 		write_disable(me);
 	}
 }
-
-uint8_t w25qxx_Read_Byte (w25qxx_handle_t *me, uint32_t Addr)
-{
-    w25qxxIF_t *tmpIF = me->meIF;
-    uint8_t tData[5];
-	uint8_t rData;
-
-	if (numBLOCK<512)   // Chip Size<256Mb
-	{
-		tData[0] = W25Q_READ_DATA;  // enable Read
-		tData[1] = (Addr>>16)&0xFF;  // MSB of the memory Address
-		tData[2] = (Addr>>8)&0xFF;
-		tData[3] = (Addr)&0xFF; // LSB of the memory Address
-	}
-	else  // we use 32bit memory address for chips >= 256Mb
-	{
-		tData[0] = W25Q_READ_DATA_4B;  // Read Data with 4-Byte Address
-		tData[1] = (Addr>>24)&0xFF;  // MSB of the memory Address
-		tData[2] = (Addr>>16)&0xFF;
-		tData[3] = (Addr>>8)&0xFF;
-		tData[4] = (Addr)&0xFF; // LSB of the memory Address
-	}
-
-	tmpIF->csLOW();  // pull the CS Low
-	if (numBLOCK<512)
-	{
-		tmpIF->spi_write(tData, 4);  // send read instruction along with the 24 bit memory address
-	}
-	else
-	{
-		tmpIF->spi_write(tData, 5);  // send read instruction along with the 32 bit memory address
-	}
-
-	tmpIF->spi_read(&rData, 1);  // Read the data
-	tmpIF->csHIGH();  // pull the CS High
-
-	return rData;
-}
-
-float w25qxx_Read_NUM (w25qxx_handle_t *me, uint32_t page, uint16_t offset)
-{
-	uint8_t rData[4];
-	w25qxx_Read(me, page, offset, 4, rData);
-	return (Bytes2float(rData));
-}
-
 void w25qxx_Write_NUM (w25qxx_handle_t *me, uint32_t page, uint16_t offset, float data)
 {
     float2Bytes(me->tempBytes, data);
     w25qxx_Write(me, page, offset, 4, me->tempBytes);
 }
-
-
-void w25qxx_Read_32B (w25qxx_handle_t *me, uint32_t page, uint16_t offset, uint32_t size, uint32_t *data)
-{
-    uint8_t data8[size*4];
-	uint32_t indx = 0;
-
-	w25qxx_FastRead(me, page, offset, size*4, data8);
-
-	for (uint32_t i=0; i<size; i++)
-	{
-		data[i] = (data8[indx++]) | (data8[indx++]<<8) | (data8[indx++]<<16) | (data8[indx++]<<24);
-	}
-}
-
 void w25qxx_Write_32B (w25qxx_handle_t *me, uint32_t page, uint16_t offset, uint32_t size, uint32_t *data)
 {
     uint8_t data8[size*4];
@@ -515,7 +609,24 @@ void w25qxx_Write_32B (w25qxx_handle_t *me, uint32_t page, uint16_t offset, uint
 	w25qxx_Write(me, page, offset, indx, data8);
 }
 
-void flash_WriteMemory(w25qxx_handle_t *me, uint8_t* buffer, uint32_t address, uint32_t buffer_size)
+void w25qxx_PowerDown(w25qxx_handle_t *me) {
+    w25qxxIF_t *tmpIF = me->meIF;
+    uint8_t tData = W25Q_POWER_DOWN;  // Release from Power-down command
+	tmpIF->csLOW();
+	tmpIF->spi_write(&tData, 1);
+	tmpIF->csHIGH();
+	tmpIF->delay_us(3); // as datasheet
+}
+void w25qxx_ReleasePowerDown(w25qxx_handle_t *me) {
+    w25qxxIF_t *tmpIF = me->meIF;
+    uint8_t tData = W25Q_RELEASE_POWER_DOWN;  // Release from Power-down command
+	tmpIF->csLOW();
+	tmpIF->spi_write(&tData, 1);
+	tmpIF->csHIGH();
+	tmpIF->delay_us(3); // as datasheet
+}
+
+void flash_WriteMemory(w25qxx_handle_t *me, uint32_t address, uint8_t* buffer, uint32_t buffer_size)
 {
     w25qxxIF_t *tmpIF = me->meIF;
     uint32_t page = address/256;
@@ -594,7 +705,7 @@ void flash_WriteMemory(w25qxx_handle_t *me, uint8_t* buffer, uint32_t address, u
 
 }
 
-void flash_ReadMemory (w25qxx_handle_t *me, uint32_t Addr, uint32_t Size, uint8_t* buffer)
+void flash_ReadMemory (w25qxx_handle_t *me, uint32_t Addr, uint8_t* buffer, uint32_t Size)
 {
     uint32_t page = Addr/256;
 	uint16_t offset = Addr%256;
