@@ -15,7 +15,7 @@
 * 3) internal and external interfaces from this unit
 ==================================================================================================*/
 #include <stdint.h>
-
+#include <stdbool.h>
 /*==================================================================================================
                                        DEFINES AND MACROS
 ==================================================================================================*/
@@ -58,10 +58,10 @@ typedef struct{
 *                                       FUNCTION PROTOTYPES
 ==================================================================================================*/
 void FM25L16B_Init(fm25l16b_t *me, fm25l16bIF_t *meIF);
-void FM25L16B_write_enable(fm25l16b_t *me);
+void FM25L16B_write_enable(fm25l16b_t *me , bool enable);
 bool FM25L16B_get_status(fm25l16b_t *me, fm25l16b_status_t *status);
 bool FM25L16B_set_status(fm25l16b_t *me, fm25l16b_status_t *status);
-void FM25L16B_write(fm25l16b_t *me, uint16_t address, uint8_t *buffer, uint32_t numByte);
-void FM25L16B_read(fm25l16b_t *me, uint16_t address, uint8_t *buffer, uint32_t numByte);
+bool FM25L16B_write(fm25l16b_t *me, uint16_t address, uint8_t *buffer, uint32_t numByte);
+bool FM25L16B_read(fm25l16b_t *me, uint16_t address, uint8_t *buffer, uint32_t numByte);
 
 #endif /* USER_DRIVERS_FM25L16B_H_ */
